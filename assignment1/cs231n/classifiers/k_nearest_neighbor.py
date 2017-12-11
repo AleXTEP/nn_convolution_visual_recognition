@@ -66,19 +66,18 @@ class KNearestNeighbor(object):
     num_test = X.shape[0]
     num_train = self.X_train.shape[0]
     dists = np.zeros((num_test, num_train))
+    #####################################################################
+    # TODO:                                                             #
+    # Compute the l2 distance between the ith test point and the jth    #
+    # training point, and store the result in dists[i, j]. You should   #
+    # not use a loop over dimension.                                    #
+    #####################################################################
     for i in xrange(num_test):
       for j in xrange(num_train):
-        dists[i, j] = math.sqrt(np.sum(np.power(self.X_train[j,:]  - X[i,:], 2)))
-        #####################################################################
-        # TODO:                                                             #
-        # Compute the l2 distance between the ith test point and the jth    #
-        # training point, and store the result in dists[i, j]. You should   #
-        # not use a loop over dimension.                                    #
-        #####################################################################
-        pass
-        #####################################################################
-        #                       END OF YOUR CODE                            #
-        #####################################################################
+        dists[i, j] = math.sqrt(np.sum(np.power(self.X_train[j,:]  - X[i,:], 2)));
+    #####################################################################
+    #                       END OF YOUR CODE                            #
+    #####################################################################
     return dists
 
   def compute_distances_one_loop(self, X):
@@ -97,7 +96,7 @@ class KNearestNeighbor(object):
       # Compute the l2 distance between the ith test point and all training #
       # points, and store the result in dists[i, :].                        #
       #######################################################################
-      pass
+      dists[i, :] = np.sqrt(np.sum(np.power(self.X_train - X[i, :], 2), 1))
       #######################################################################
       #                         END OF YOUR CODE                            #
       #######################################################################
@@ -125,7 +124,7 @@ class KNearestNeighbor(object):
     # HINT: Try to formulate the l2 distance using matrix multiplication    #
     #       and two broadcast sums.                                         #
     #########################################################################
-    pass
+    dists = np.sqrt(np.outer(np.sum(np.square(X), axis  = 1), np.ones(num_train)) + np.outer(np.ones(num_test), np.sum(np.square(self.X_train), axis  = 1)) - 2*np.dot(X, np.transpose(self.X_train)))
     #########################################################################
     #                         END OF YOUR CODE                              #
     #########################################################################
@@ -157,9 +156,7 @@ class KNearestNeighbor(object):
       # neighbors. Store these labels in closest_y.                           #
       # Hint: Look up the function numpy.argsort.                             #
       #########################################################################
-      closest_y = self.y_train[np.argsort(dists[i,:])][:k]
-      y_pred[i] = Counter(closest_y).most_common()[0][0]
-
+      closest_y = self.y_train[np.argsort(dists[i,:])][:k];
       pass
       #########################################################################
       # TODO:                                                                 #
@@ -168,7 +165,7 @@ class KNearestNeighbor(object):
       # Store this label in y_pred[i]. Break ties by choosing the smaller     #
       # label.                                                                #
       #########################################################################
-      pass
+      y_pred[i] = Counter(closest_y).most_common()[0][0];
       #########################################################################
       #                           END OF YOUR CODE                            # 
       #########################################################################
