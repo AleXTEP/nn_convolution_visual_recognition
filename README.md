@@ -1,2 +1,3 @@
 # nn_convolution_visual_recognition
-cs231 stanford assignments
+cs231 stanford assignments.
+
