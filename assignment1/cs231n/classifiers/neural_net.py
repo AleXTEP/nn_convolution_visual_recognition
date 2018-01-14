@@ -76,6 +76,18 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
+    num_examples = N
+
+    # 1. layer
+
+    #linear1Layer = X.dot(W1) + b1
+    #linear1Layer[linear1Layer < 0]  = 0
+    #linear1scores = linear1Layer
+
+    hidden_layer = np.maximum(0, np.dot(X, W1) + b1)
+
+    # 2. layer
+    scores = hidden_layer.dot(W2) + b2    
     pass
     #############################################################################
     #                              END OF YOUR CODE                             #
@@ -93,13 +105,36 @@ class TwoLayerNet(object):
     # in the variable loss, which should be a scalar. Use the Softmax           #
     # classifier loss.                                                          #
     #############################################################################
-    pass
+    scores = np.exp(scores)
+    class_total = np.sum(scores, axis = 1, keepdims = True)
+    probs = scores/class_total
+    loss  = np.sum(-np.log(probs[np.arange(len(probs)),y]))
+    loss = loss/num_examples +  reg*(np.sum(W1 * W1) + np.sum(W2 * W2))
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
 
     # Backward pass: compute gradients
     grads = {}
+    dscores = probs
+    dscores[range(num_examples),y] -= 1
+    dscores /= num_examples 
+
+    dW2 = np.dot(hidden_layer.T, dscores)
+    db2 = np.sum(dscores, axis=0, keepdims=True)
+  
+    dhidden = np.dot(dscores, W2.T)
+
+    dhidden[hidden_layer <= 0] = 0
+
+    dW = np.dot(X.T, dhidden)
+    db = np.sum(dhidden, axis=0, keepdims=True)
+    
+    dW2 += 2 * reg * W2
+    dW += 2 * reg * W1
+
+    grads['W1'], grads['W2'] , grads['b1'],  grads['b2']  = dW, dW2, db, db2
+  
     #############################################################################
     # TODO: Compute the backward pass, computing the derivatives of the weights #
     # and biases. Store the results in the grads dictionary. For example,       #
@@ -149,7 +184,11 @@ class TwoLayerNet(object):
       # TODO: Create a random minibatch of training data and labels, storing  #
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
-      pass
+           
+       
+      idx = np.random.choice(range(num_train), batch_size)
+      X_batch = X[idx,]
+      y_batch = y[idx,]
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -164,7 +203,10 @@ class TwoLayerNet(object):
       # using stochastic gradient descent. You'll need to use the gradients   #
       # stored in the grads dictionary defined above.                         #
       #########################################################################
-      pass
+      self.params["W1"] += -learning_rate * grads['W1']
+      self.params["b1"] += -learning_rate * np.squeeze(grads['b1'].T , axis=(1,))
+      self.params["W2"] += -learning_rate * grads['W2']
+      self.params["b2"] += -learning_rate * np.squeeze(grads['b2'].T , axis=(1,))
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -209,7 +251,9 @@ class TwoLayerNet(object):
     ###########################################################################
     # TODO: Implement this function; it should be VERY simple!                #
     ###########################################################################
-    pass
+    hidden_layer = np.maximum(0, X.dot(self.params['W1']) + self.params['b1'])
+    outputLayer = hidden_layer.dot(self.params['W2']) + self.params['b2']        
+    y_pred =  np.argmax(outputLayer, axis=1)
     ###########################################################################
     #                              END OF YOUR CODE                           #
     ###########################################################################
