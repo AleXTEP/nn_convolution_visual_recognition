@@ -236,17 +236,22 @@ class FullyConnectedNet(object):
             # {affine - [batch norm] - relu - [dropout]} x (L - 1) - affine - softmax
             w_name = 'W' + str(i)
             b_name = 'b' + str(i)
-            gamma_name = 'gamma' + str(i)
-            beta_name = 'beta' + str(i)
-
             in_dim = dims_initialisation[i]
-            out_dim = dims_initialisation[i+1]
+            out_dim = dims_initialisation[i+1] 
+            if i != self.num_layers and use_batchnorm:
+                gamma_name = 'gamma' + str(i)
+                beta_name = 'beta' + str(i)
+                
+                self.params[gamma_name] = np.ones((1, out_dim))
+                self.params[beta_name] = np.zeros((1, out_dim))
+
+         
             
             self.params[w_name] = weight_scale * np.random.randn(in_dim, out_dim)
             self.params[b_name] = np.zeros((1,out_dim))
 
-            self.gamma_name = np.ones((in_dim,out_dim))
-            self.beta_name = np.zeros((in_dim,out_dim))
+            
+        print (self.params.keys())
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -272,7 +277,7 @@ class FullyConnectedNet(object):
         # Cast all parameters to the correct datatype
         for k, v in self.params.items():
             self.params[k] = v.astype(dtype)
-
+  
 
     def loss(self, X, y=None):
         """
@@ -314,29 +319,34 @@ class FullyConnectedNet(object):
             w_name = 'W' + str(i)
             b_name = 'b' + str(i)
             cashe_name = 'cashe' + str(i)
+            
+      
+               
 
             if i != self.num_layers:
-
-                hidden_layer, cache_hidden = affine_relu_forward(hidden_layer, self.params[w_name], self.params[b_name])
-
+                gamma_name = 'gamma' + str(i)
+                beta_name = 'beta' + str(i)
 
                 if self.use_batchnorm:
-                    hidden_layer, cashe_affine = affine_forward(hidden_layer, self.params[w_name], self.params[b_name])
-                    batchnorm_forward()
+                    
+                    hidden_layer, cache_hidden = affine_batchnorm_relu_forward(hidden_layer, self.params[w_name], self.params[b_name],     self.params[gamma_name] ,     self.params[beta_name], self.bn_params[i-1] )
+                    
+                 
+              
 
-
-
-
-                if self.use_dropout:
+                elif self.use_dropout:
                     cashe_name_dropout  = 'cashe_drop' + str(i)
                     hidden_layer, cache_drop  = dropout_forward(hidden_layer, self.dropout_param)
                     cashe[cashe_name_dropout] = cache_drop
-
+                else:
+                    hidden_layer, cache_hidden = affine_relu_forward(hidden_layer, self.params[w_name], self.params[b_name])
 
 
                 self.regularisation += np.sum(self.params[w_name]* self.params[w_name]) 
             else:
                 scores, cache_hidden = affine_forward(hidden_layer, self.params[w_name], self.params[b_name])
+            
+            
             cashe[cashe_name] = cache_hidden
 
         pass
@@ -377,17 +387,26 @@ class FullyConnectedNet(object):
 
             w_name = 'W' + str(i)
             b_name = 'b' + str(i)
+           
             cashe_name = 'cashe' + str(i)
 
             if i == self.num_layers:
                 dhidden, grads[w_name], grads[b_name] =  affine_backward(dscores, cashe[cashe_name])    
             else:
-                if self.use_dropout :#and i!=1:
+                if self.use_batchnorm:
+                    gamma_name = 'gamma' + str(i)
+                    beta_name = 'beta' + str(i)
+                    dhidden, grads[w_name], grads[b_name], grads[gamma_name], grads[beta_name] = affine_batch_norm_relu_backward(dhidden, cashe[cashe_name])
+                    
+                elif self.use_dropout :#and i!=1:
                     cashe_name_dropout  = 'cashe_drop' + str(i)
-                    dhidden  = dropout_backward(dhidden,  cashe[cashe_name_dropout])
-
-                dhidden, grads[w_name], grads[b_name]  = affine_relu_backward(dhidden,  cashe[cashe_name])
-                grads[w_name] +=  self.reg * self.params[w_name]
+                    dhidden, grads[w_name], grads[b_name]   = dropout_backward(dhidden,  cashe[cashe_name_dropout])
+                else:
+                    dhidden, grads[w_name], grads[b_name]  = affine_relu_backward(dhidden,  cashe[cashe_name])
+                
+             
+            
+            grads[w_name] +=  self.reg * self.params[w_name]
 
             
         ############################################################################
